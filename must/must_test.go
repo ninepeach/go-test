@@ -34,7 +34,7 @@ func TestEmpty(t *testing.T) {
 
 func TestMapContainsKeys(t *testing.T) {
     data := map[string]int{"one": 1, "two": 2}
-    MapContainsKeys(t, data, []interface{}{"one", "two"}) // Corrected
+    MapContainsKeys(t, data, []string{"one", "two"}) // Corrected
 }
 
 func TestSliceContainsEqual(t *testing.T) {
