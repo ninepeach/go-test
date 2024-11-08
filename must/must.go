@@ -67,7 +67,7 @@ func MapEmpty(t *testing.T, m interface{}) {
 }
 
 // MapContainsKeys asserts that the map contains the specified keys
-func MapContainsKeys(t *testing.T, m interface{}, keys []string) {
+func MapContainsKeys(t *testing.T, m interface{}, keys []interface{}) {
     val := reflect.ValueOf(m)
     for _, key := range keys {
         if !val.MapIndex(reflect.ValueOf(key)).IsValid() {
