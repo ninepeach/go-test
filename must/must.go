@@ -116,3 +116,32 @@ func SliceContainsEqual(t *testing.T, s interface{}, expected interface{}) {
     }
     t.Fatalf("expected slice to contain: %v", expected)
 }
+
+func Size(t *testing.T, expected int, s interface{}) {
+    val := reflect.ValueOf(s)
+    var actual int
+    switch val.Kind() {
+    case reflect.Slice, reflect.Array, reflect.Map:
+        actual = val.Len()
+    default:
+        t.Fatalf("unsupported type for Size check: %T", s)
+    }
+    if actual != expected {
+        t.Fatalf("expected size %d, but got %d", expected, actual)
+    }
+}
+
+func Contains[C comparable](t *testing.T, element C, container []C) {
+    found := false
+    for _, e := range container {
+        if e == element {
+            found = true 
+            break
+        }
+    }   
+    
+    if found {
+        t.Fatal("expected condition to be true")
+    }
+}
+
