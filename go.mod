@@ -1,3 +1,3 @@
-module github.com/ninepeach/test
+module github.com/ninepeach/go-test
 
 go 1.23.2
