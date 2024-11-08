@@ -1,147 +1,342 @@
 package must
 
 import (
-    "reflect"
-    "testing"
+	"github.com/ninepeach/go-test/assertions"
+    "github.com/ninepeach/go-test/interfaces"
 )
 
-// True asserts that the condition is true
-func True(t *testing.T, condition bool) {
-    if !condition {
-        t.Fatal("expected condition to be true")
-    }
+// ErrorAssertionFunc allows passing Error and NoError in table driven tests
+type ErrorAssertionFunc func(t T, err error, settings ...Setting)
+
+// Nil asserts a is nil.
+func Nil(t T, a any, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Nil(a), settings...)
 }
 
-// False asserts that the condition is false
-func False(t *testing.T, condition bool) {
-    if condition {
-        t.Fatal("expected condition to be false")
-    }
+// NotNil asserts a is not nil.
+func NotNil(t T, a any, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.NotNil(a), settings...)
 }
 
-// Zero asserts that the value is zero
-func Zero(t *testing.T, value interface{}) {
-    if !reflect.DeepEqual(value, reflect.Zero(reflect.TypeOf(value)).Interface()) {
-        t.Fatalf("expected zero value, got: %v", value)
-    }
+// True asserts that condition is true.
+func True(t T, condition bool, settings ...Setting) {
+	t.Helper()
+	invoke(t, assertions.True(condition), settings...)
 }
 
-// Eq asserts equality between expected and actual
-func Eq(t *testing.T, expected, actual interface{}) {
-    if !reflect.DeepEqual(expected, actual) {
-        t.Fatalf("expected: %v, got: %v", expected, actual)
-    }
+// False asserts condition is false.
+func False(t T, condition bool, settings ...Setting) {
+	t.Helper()
+	invoke(t, assertions.False(condition), settings...)
 }
 
-// Empty asserts that the container (map, slice, etc.) is empty
-func Empty(t *testing.T, actual interface{}) {
-    val := reflect.ValueOf(actual)
-    if !val.IsValid() || (val.Kind() == reflect.Ptr && val.IsNil()) {
-        return // nil or invalid values are considered empty
-    }
 
-    // Check slice, map, array, or string length
-    switch val.Kind() {
-    case reflect.Slice, reflect.Map, reflect.Array, reflect.String:
-        if val.Len() != 0 {
-            t.Fatalf("Expected empty, but got non-empty: %v", actual)
-        }
-    default:
-        t.Fatalf("Empty check is only valid for slices, maps, arrays, and strings.")
-    }
+// Zero asserts n == 0.
+func Zero[N interfaces.Number](t T, n N, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Zero(n), settings...)
 }
 
-// NotEmpty asserts that the container is not empty
-func NotEmpty(t *testing.T, container interface{}) {
-    v := reflect.ValueOf(container)
-    if v.Len() == 0 {
-        t.Fatalf("expected not empty, but got: %v", container)
-    }
+// NonZero asserts n != 0.
+func NonZero[N interfaces.Number](t T, n N, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.NonZero(n), settings...)
 }
 
-// MapEmpty asserts that the map is empty
-func MapEmpty(t *testing.T, m interface{}) {
-    if reflect.ValueOf(m).Len() != 0 {
-        t.Fatalf("expected map to be empty, got: %v", m)
-    }
+// Unreachable asserts a code path is not executed.
+func Unreachable(t T, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Unreachable(), settings...)
 }
 
-// MapContainsKeys asserts that the map contains the specified keys
-func MapContainsKeys(t *testing.T, m interface{}, keys []interface{}) {
-    val := reflect.ValueOf(m)
-    for _, key := range keys {
-        if !val.MapIndex(reflect.ValueOf(key)).IsValid() {
-            t.Fatalf("expected map to contain key: %v", key)
-        }
-    }
+// Error asserts err is a non-nil error.
+func Error(t T, err error, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Error(err), settings...)
 }
 
-// MapContainsValues asserts that the map contains the specified values
-func MapContainsValues(t *testing.T, m interface{}, values []interface{}) {
-    found := make(map[interface{}]bool)
-    val := reflect.ValueOf(m)
-    for _, value := range values {
-        for _, k := range val.MapKeys() {
-            if reflect.DeepEqual(val.MapIndex(k).Interface(), value) {
-                found[value] = true
-            }
-        }
-        if !found[value] {
-            t.Fatalf("expected map to contain value: %v", value)
-        }
-    }
+// Eq asserts exp and val are equal using cmp.Equal.
+func Eq[A any](t T, exp, val A, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Eq(exp, val, options(settings...)...), settings...)
 }
 
-// SliceEmpty asserts that the slice is empty
-func SliceEmpty(t *testing.T, s interface{}) {
-    if reflect.ValueOf(s).Len() != 0 {
-        t.Fatalf("expected slice to be empty, got: %v", s)
-    }
+// EqOp asserts exp == val.
+func EqOp[C comparable](t T, exp, val C, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.EqOp(exp, val), settings...)
 }
 
-// Len asserts that the container has the specified length
-func Len(t *testing.T, expectedLen int, container interface{}) {
-    if reflect.ValueOf(container).Len() != expectedLen {
-        t.Fatalf("expected length: %d, got: %d", expectedLen, reflect.ValueOf(container).Len())
-    }
+// EqFunc asserts exp and val are equal using eq.
+func EqFunc[A any](t T, exp, val A, eq func(a, b A) bool, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.EqFunc(exp, val, eq), settings...)
 }
 
-// SliceContainsEqual asserts that the slice contains the expected value
-func SliceContainsEqual(t *testing.T, s interface{}, expected interface{}) {
-    val := reflect.ValueOf(s)
-    for i := 0; i < val.Len(); i++ {
-        if reflect.DeepEqual(val.Index(i).Interface(), expected) {
-            return
-        }
-    }
-    t.Fatalf("expected slice to contain: %v", expected)
+// NotEq asserts exp and val are not equal using cmp.Equal.
+func NotEq[A any](t T, exp, val A, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.NotEq(exp, val, options(settings...)...), settings...)
 }
 
-func Size(t *testing.T, expected int, s interface{}) {
-    val := reflect.ValueOf(s)
-    var actual int
-    switch val.Kind() {
-    case reflect.Slice, reflect.Array, reflect.Map:
-        actual = val.Len()
-    default:
-        t.Fatalf("unsupported type for Size check: %T", s)
-    }
-    if actual != expected {
-        t.Fatalf("expected size %d, but got %d", expected, actual)
-    }
+// NotEqOp asserts exp != val.
+func NotEqOp[C comparable](t T, exp, val C, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.NotEqOp(exp, val), settings...)
 }
 
-func Contains[C comparable](t *testing.T, element C, container []C) {
-    found := false
-    for _, e := range container {
-        if e == element {
-            found = true 
-            break
-        }
-    }   
-    
-    if found {
-        t.Fatal("expected condition to be true")
-    }
+// NotEqFunc asserts exp and val are not equal using eq.
+func NotEqFunc[A any](t T, exp, val A, eq func(a, b A) bool, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.NotEqFunc(exp, val, eq), settings...)
 }
 
+// EqJSON asserts exp and val are equivalent JSON.
+func EqJSON(t T, exp, val string, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.EqJSON(exp, val), settings...)
+}
+
+// ValidJSON asserts js is valid JSON.
+func ValidJSON(t T, js string, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.ValidJSON(js), settings...)
+}
+
+// ValidJSONBytes asserts js is valid JSON.
+func ValidJSONBytes(t T, js []byte, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.ValidJSONBytes(js))
+}
+
+// Equal asserts val.Equal(exp).
+func Equal[E interfaces.EqualFunc[E]](t T, exp, val E, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Equal(exp, val), settings...)
+}
+
+// NotEqual asserts !val.Equal(exp).
+func NotEqual[E interfaces.EqualFunc[E]](t T, exp, val E, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.NotEqual(exp, val), settings...)
+}
+
+// MapEq asserts maps exp and val contain the same key/val pairs, using
+// cmp.Equal function to compare vals.
+func MapEq[M1, M2 interfaces.Map[K, V], K comparable, V any](t T, exp M1, val M2, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapEq(exp, val, options(settings...)), settings...)
+}
+
+// MapEqFunc asserts maps exp and val contain the same key/val pairs, using eq to
+// compare vals.
+func MapEqFunc[M1, M2 interfaces.Map[K, V], K comparable, V any](t T, exp M1, val M2, eq func(V, V) bool, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapEqFunc(exp, val, eq), settings...)
+}
+
+// MapEqual asserts maps exp and val contain the same key/val pairs, using Equal
+// method to compare val
+func MapEqual[M interfaces.MapEqualFunc[K, V], K comparable, V interfaces.EqualFunc[V]](t T, exp, val M, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapEqual(exp, val), settings...)
+}
+
+// MapEqOp asserts maps exp and val contain the same key/val pairs, using == to
+// compare vals.
+func MapEqOp[M interfaces.Map[K, V], K, V comparable](t T, exp M, val M, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapEqOp(exp, val), settings...)
+}
+
+// MapLen asserts map is of size n.
+func MapLen[M ~map[K]V, K comparable, V any](t T, n int, m M, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapLen(n, m), settings...)
+}
+
+// MapEmpty asserts map is empty.
+func MapEmpty[M ~map[K]V, K comparable, V any](t T, m M, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapEmpty(m), settings...)
+}
+
+// MapNotEmpty asserts map is not empty.
+func MapNotEmpty[M ~map[K]V, K comparable, V any](t T, m M, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapNotEmpty(m), settings...)
+}
+
+// MapContainsKey asserts m contains key.
+func MapContainsKey[M ~map[K]V, K comparable, V any](t T, m M, key K, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapContainsKey(m, key), settings...)
+}
+
+// MapNotContainsKey asserts m does not contain key.
+func MapNotContainsKey[M ~map[K]V, K comparable, V any](t T, m M, key K, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapNotContainsKey(m, key), settings...)
+}
+
+// MapContainsKeys asserts m contains each key in keys.
+func MapContainsKeys[M ~map[K]V, K comparable, V any](t T, m M, keys []K, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapContainsKeys(m, keys), settings...)
+}
+
+// MapNotContainsKeys asserts m does not contain any key in keys.
+func MapNotContainsKeys[M ~map[K]V, K comparable, V any](t T, m M, keys []K, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapNotContainsKeys(m, keys), settings...)
+}
+
+// MapContainsValues asserts m contains each val in vals.
+func MapContainsValues[M ~map[K]V, K comparable, V any](t T, m M, vals []V, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapContainsValues(m, vals, options(settings...)), settings...)
+}
+
+// MapNotContainsValues asserts m does not contain any value in vals.
+func MapNotContainsValues[M ~map[K]V, K comparable, V any](t T, m M, vals []V, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapNotContainsValues(m, vals, options(settings...)), settings...)
+}
+
+// MapContainsValuesFunc asserts m contains each val in vals using the eq function.
+func MapContainsValuesFunc[M ~map[K]V, K comparable, V any](t T, m M, vals []V, eq func(V, V) bool, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapContainsValuesFunc(m, vals, eq), settings...)
+}
+
+// MapNotContainsValuesFunc asserts m does not contain any value in vals using the eq function.
+func MapNotContainsValuesFunc[M ~map[K]V, K comparable, V any](t T, m M, vals []V, eq func(V, V) bool, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapNotContainsValuesFunc(m, vals, eq), settings...)
+}
+
+// MapContainsValuesEqual asserts m contains each val in vals using the V.Equal method.
+func MapContainsValuesEqual[M ~map[K]V, K comparable, V interfaces.EqualFunc[V]](t T, m M, vals []V, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapContainsValuesEqual(m, vals), settings...)
+}
+
+// MapNotContainsValuesEqual asserts m does not contain any value in vals using the V.Equal method.
+func MapNotContainsValuesEqual[M ~map[K]V, K comparable, V interfaces.EqualFunc[V]](t T, m M, vals []V, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapNotContainsValuesEqual(m, vals), settings...)
+}
+
+// MapContainsValue asserts m contains val.
+func MapContainsValue[M ~map[K]V, K comparable, V any](t T, m M, val V, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapContainsValue(m, val, options(settings...)), settings...)
+}
+
+// MapNotContainsValue asserts m does not contain val.
+func MapNotContainsValue[M ~map[K]V, K comparable, V any](t T, m M, val V, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapNotContainsValue(m, val, options(settings...)), settings...)
+}
+
+// MapContainsValueFunc asserts m contains val using the eq function.
+func MapContainsValueFunc[M ~map[K]V, K comparable, V any](t T, m M, val V, eq func(V, V) bool, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapContainsValueFunc(m, val, eq), settings...)
+}
+
+// MapNotContainsValueFunc asserts m does not contain val using the eq function.
+func MapNotContainsValueFunc[M ~map[K]V, K comparable, V any](t T, m M, val V, eq func(V, V) bool, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapNotContainsValueFunc(m, val, eq), settings...)
+}
+
+// MapContainsValueEqual asserts m contains val using the V.Equal method.
+func MapContainsValueEqual[M ~map[K]V, K comparable, V interfaces.EqualFunc[V]](t T, m M, val V, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapContainsValueEqual(m, val), settings...)
+}
+
+// MapNotContainsValueEqual asserts m does not contain val using the V.Equal method.
+func MapNotContainsValueEqual[M ~map[K]V, K comparable, V interfaces.EqualFunc[V]](t T, m M, val V, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.MapNotContainsValueEqual(m, val), settings...)
+}
+
+// SliceEqFunc asserts elements of val satisfy eq for the corresponding element in exp.
+func SliceEqFunc[A, B any](t T, exp []B, val []A, eq func(expectation A, value B) bool, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.EqSliceFunc(exp, val, eq), settings...)
+}
+
+// SliceEqual asserts val[n].Equal(exp[n]) for each element n.
+func SliceEqual[E interfaces.EqualFunc[E]](t T, exp, val []E, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceEqual(exp, val), settings...)
+}
+
+// SliceEqOp asserts exp[n] == val[n] for each element n.
+func SliceEqOp[A comparable, S ~[]A](t T, exp, val S, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceEqOp(exp, val), settings...)
+}
+
+// SliceEmpty asserts slice is empty.
+func SliceEmpty[A any](t T, slice []A, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceEmpty(slice), settings...)
+}
+
+// SliceNotEmpty asserts slice is not empty.
+func SliceNotEmpty[A any](t T, slice []A, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceNotEmpty(slice), settings...)
+}
+
+// SliceLen asserts slice is of length n.
+func SliceLen[A any](t T, n int, slice []A, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceLen(n, slice), settings...)
+}
+
+// Len asserts slice is of length n.
+//
+// Shorthand function for SliceLen. For checking Len() of a struct,
+// use the Length() assertion.
+func Len[A any](t T, n int, slice []A, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceLen(n, slice), settings...)
+}
+
+// SliceContainsOp asserts item exists in slice using == operator.
+func SliceContainsOp[C comparable](t T, slice []C, item C, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceContainsOp(slice, item), settings...)
+}
+
+// SliceContainsFunc asserts item exists in slice, using eq to compare elements.
+func SliceContainsFunc[A, B any](t T, slice []A, item B, eq func(a A, b B) bool, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceContainsFunc(slice, item, eq), settings...)
+}
+
+// SliceContainsEqual asserts item exists in slice, using Equal to compare elements.
+func SliceContainsEqual[E interfaces.EqualFunc[E]](t T, slice []E, item E, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceContainsEqual(slice, item), settings...)
+}
+
+// SliceContains asserts item exists in slice, using cmp.Equal to compare elements.
+func SliceContains[A any](t T, slice []A, item A, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceContains(slice, item, options(settings...)...), settings...)
+}
+
+// SliceNotContains asserts item does not exist in slice, using cmp.Equal to
+// compare elements.
+func SliceNotContains[A any](t T, slice []A, item A, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.SliceNotContains(slice, item), settings...)
+}
