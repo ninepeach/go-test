@@ -340,3 +340,46 @@ func SliceNotContains[A any](t T, slice []A, item A, settings ...Setting) {
     t.Helper()
     invoke(t, assertions.SliceNotContains(slice, item), settings...)
 }
+
+// Size asserts s.Size() is equal to exp.
+func Size(t T, exp int, s interfaces.SizeFunc, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Size(exp, s), settings...)
+}
+
+// Length asserts l.Len() is equal to exp.
+func Length(t T, exp int, l interfaces.LengthFunc, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Length(exp, l), settings...)
+}
+
+// Empty asserts e.Empty() is true.
+func Empty(t T, e interfaces.EmptyFunc, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Empty(e), settings...)
+}
+
+// NotEmpty asserts e.Empty() is false.
+func NotEmpty(t T, e interfaces.EmptyFunc, settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.NotEmpty(e), settings...)
+}
+
+// Contains asserts container.ContainsFunc(element) is true.
+func Contains[C any](t T, element C, container interfaces.ContainsFunc[C], settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.Contains(element, container), settings...)
+}
+
+// ContainsSubset asserts each element in elements exists in container, in no particular order.
+// There may be elements in container beyond what is present in elements.
+func ContainsSubset[C any](t T, elements []C, container interfaces.ContainsFunc[C], settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.ContainsSubset(elements, container), settings...)
+}
+
+// NotContains asserts container.ContainsFunc(element) is false.
+func NotContains[C any](t T, element C, container interfaces.ContainsFunc[C], settings ...Setting) {
+    t.Helper()
+    invoke(t, assertions.NotContains(element, container), settings...)
+}

@@ -759,3 +759,61 @@ func MapNotContainsValueEqual[M ~map[K]V, K comparable, V interfaces.EqualFunc[V
         return a.Equal(b)
     })
 }
+
+func Length(n int, length interfaces.LengthFunc) (s string) {
+    if l := length.Len(); l != n {
+        s = "expected different length\n"
+        s += fmt.Sprintf("↪   length: %d\n", l)
+        s += fmt.Sprintf("↪ expected: %d\n", n)
+    }
+    return
+}
+
+func Size(n int, size interfaces.SizeFunc) (s string) {
+    if l := size.Size(); l != n {
+        s = "expected different size\n"
+        s += fmt.Sprintf("↪     size: %d\n", l)
+        s += fmt.Sprintf("↪ expected: %d\n", n)
+    }
+    return
+}
+
+func Empty(e interfaces.EmptyFunc) (s string) {
+    if !e.Empty() {
+        s = "expected to be empty, but was not\n"
+    }
+    return
+}
+
+func NotEmpty(e interfaces.EmptyFunc) (s string) {
+    if e.Empty() {
+        s = "expected to not be empty, but is\n"
+    }
+    return
+}
+
+func Contains[C any](i C, c interfaces.ContainsFunc[C]) (s string) {
+    if !c.Contains(i) {
+        s = "expected to contain element, but does not\n"
+    }
+    return
+}
+
+func ContainsSubset[C any](elements []C, container interfaces.ContainsFunc[C]) (s string) {
+    for i := 0; i < len(elements); i++ {
+        element := elements[i]
+        if !container.Contains(element) {
+            s = "expected to contain element, but does not\n"
+            s += fmt.Sprintf("↪ element: %v\n", element)
+            return
+        }
+    }
+    return
+}
+
+func NotContains[C any](i C, c interfaces.ContainsFunc[C]) (s string) {
+    if c.Contains(i) {
+        s = "expected not to contain element, but it does\n"
+    }
+    return
+}
